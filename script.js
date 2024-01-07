@@ -1,47 +1,79 @@
-let timerDisplay = document.querySelector('.timerDisplay');
-let stopBtn = document.getElementById('stopBtn');
-let startBtn = document.getElementById('startBtn');
-let resetBtn = document.getElementById('resetBtn');
+let isRunning = false;
+let startTime;
+let lapStartTime;
+let lapNumber = 1;
 
-let msec = 00;
-let secs = 00;
-let mins = 00;
+function startStop() {
+    const startStopButton = document.getElementById("startStop");
+    const lapResetButton = document.getElementById("lapReset");
 
-let timerId = null;
-
-startBtn.addEventListener('click', function(){
-    if(timerId !== null){
-        clearInterval(timerId);
+    if (isRunning) {
+        // Stop the stopwatch
+        isRunning = false;
+        lapResetButton.textContent = "Reset";
+        lapResetButton.disabled = false;
+        startStopButton.textContent = "Start";
+        displayElapsedTime();
+    } else {
+        // Start the stopwatch
+        isRunning = true;
+        lapResetButton.textContent = "Lap";
+        lapResetButton.disabled = false;
+        startStopButton.textContent = "Stop";
+        startTime = Date.now() - (lapStartTime || 0);
+        lapStartTime = null;
+        updateDisplay();
     }
-    timerId = setInterval(startTimer, 10);
-});
+}
 
-stopBtn.addEventListener('click', function(){
-    clearInterval(timerId);
-});
+function lapReset() {
+    const lapResetButton = document.getElementById("lapReset");
+    const lapList = document.getElementById("lapList");
 
-resetBtn.addEventListener('click', function(){
-    clearInterval(timerId);
-    timerDisplay.innerHTML = `00 : 00 : 00`;
-    msec = secs = mins = 00;
-});
-
-function startTimer(){
-    msec++;
-    if(msec == 100){
-        msec = 0;
-        secs++;
-        if(secs == 60){
-            secs = 0;
-mins++;
-        }
+    if (isRunning) {
+        // Record lap time
+        const lapTime = Date.now() - startTime;
+        const lapItem = document.createElement("li");
+        lapItem.textContent = `Lap ${lapNumber}: ${formatTime(lapTime)}`;
+        lapList.appendChild(lapItem);
+        lapNumber++;
+        lapStartTime = Date.now();
+    } else {
+        // Reset the stopwatch
+        isRunning = false;
+        startTime = null;
+        lapStartTime = null;
+        lapNumber = 1;
+        lapResetButton.textContent = "Lap";
+        lapResetButton.disabled = true;
+        updateDisplay();
+        clearLapList();
     }
+}
 
-    let msecString = msec < 10 ? `0${msec}` : msec;
-    let secsString = secs < 10 ? `0${secs}` : secs;
-    let minsString = mins < 10 ? `0${mins}` : mins;
-    
+function updateDisplay() {
+    const display = document.getElementById("display");
+    const elapsed = isRunning ? Date.now() - startTime : 0;
+    display.textContent = formatTime(elapsed);
+    if (isRunning) {
+        requestAnimationFrame(updateDisplay);
+    }
+}
 
-    timerDisplay.innerHTML = `${minsString} : ${secsString} : ${msecString}`;
+function displayElapsedTime() {
+    const display = document.getElementById("display");
+    const elapsed = Date.now() - startTime;
+    display.textContent = formatTime(elapsed);
+}
 
+function clearLapList() {
+    const lapList = document.getElementById("lapList");
+    lapList.innerHTML = "";
+}
+
+function formatTime(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
